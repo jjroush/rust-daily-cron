@@ -1,14 +1,13 @@
 #[macro_use]
-extern crate lambda_runtime as lambda;
-#[macro_use]
 extern crate serde_derive;
 #[macro_use]
 extern crate log;
 extern crate simple_logger;
 
-use lambda::error::HandlerError;
+use lambda_runtime::{service_fn, LambdaEvent, Error};
 
-use std::error::Error;
+use serde_json::{Value};
+
 use std::collections::HashMap;
 
 #[derive(Deserialize, Clone)]
@@ -22,30 +21,30 @@ struct CustomOutput {
     message: String,
 }
 
-async fn wrapper(event: CustomEvent, cx: lambda::Context) -> Result<CustomOutput, HandlerError> {
-    let res = my_handler(event, cx).await;
+// async fn wrapper(event: CustomEvent, cx: lambda::Context) -> Result<CustomOutput, Error> {
+//     let res = my_handler(event, cx).await;
 
-    if let Err(e) = &res {
-        error!("got error from handler: {:?}", &e);
-    }
-    res
-}
+//     if let Err(e) = &res {
+//         error!("got error from handler: {:?}", &e);
+//     }
+//     res
+// }
 
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> Result<(), Error> {
     simple_logger::init_with_level(log::Level::Warn).unwrap();
 
-    lambda::run(lambda::Handler(wrapper)).await?;
+    let func = service_fn(my_handler);
+
+    lambda_runtime::run(func).await?;
 
     Ok(())
 }
 
-async fn my_handler(e: CustomEvent, c: lambda::Context) -> Result<CustomOutput, HandlerError> {
-    if e.first_name == "" {
-        error!("Empty first name in request {}", c.aws_request_id);
-        return Err(c.new_error("Empty first name"));
-    }
+async fn my_handler(event: LambdaEvent<Value>) -> Result<CustomOutput, Error> {
+    let (event, _context) = event.into_parts();
+    let first_name = event["firstName"].as_str().unwrap_or("world");
 
     let resp = reqwest::get("https://httpbin.org/ip")
         .await?
@@ -54,6 +53,6 @@ async fn my_handler(e: CustomEvent, c: lambda::Context) -> Result<CustomOutput, 
     println!("{:#?}", resp);
 
     Ok(CustomOutput {
-        message: format!("Hello, {}!", e.first_name),
+        message: format!("Hello, {}!", first_name),
     })
 }
