@@ -1,6 +1,5 @@
 #[macro_use]
 extern crate serde_derive;
-#[macro_use]
 extern crate log;
 extern crate simple_logger;
 
@@ -8,7 +7,8 @@ use lambda_runtime::{service_fn, LambdaEvent, Error};
 
 use serde_json::{Value};
 
-use std::collections::HashMap;
+use std::env;
+
 
 #[derive(Deserialize, Clone)]
 struct CustomEvent {
@@ -21,14 +21,28 @@ struct CustomOutput {
     message: String,
 }
 
-// async fn wrapper(event: CustomEvent, cx: lambda::Context) -> Result<CustomOutput, Error> {
-//     let res = my_handler(event, cx).await;
+#[derive(Deserialize, Debug)]
+struct PageBlocks {
+    results: Vec<Block>
+}
 
-//     if let Err(e) = &res {
-//         error!("got error from handler: {:?}", &e);
-//     }
-//     res
-// }
+#[derive(Deserialize, Debug)]
+struct Block {
+    r#type: String,
+    to_do: Option<Todo>
+    
+}
+
+#[derive(Deserialize, Debug)]
+struct Todo {
+    checked: bool,
+    rich_text: Vec<RichText>
+}
+
+#[derive(Deserialize, Debug)]
+struct RichText {
+    plain_text: String
+}
 
 
 #[tokio::main]
@@ -46,11 +60,39 @@ async fn my_handler(event: LambdaEvent<Value>) -> Result<CustomOutput, Error> {
     let (event, _context) = event.into_parts();
     let first_name = event["firstName"].as_str().unwrap_or("world");
 
-    let resp = reqwest::get("https://httpbin.org/ip")
+    let client = reqwest::Client::new();
+
+    let mut headers = reqwest::header::HeaderMap::new();
+
+    let owned_string: String = "Bearer ".to_owned();
+    let borrowed_string: &str = &env::var("NOTION_SECRET").unwrap();
+
+    let new_owned_string = owned_string + borrowed_string;
+
+    headers.insert("Notion-Version", "2022-02-22".parse().unwrap());
+    headers.insert("Authorization", new_owned_string.parse().unwrap());
+
+
+    let mut resp: PageBlocks = client.get("https://api.notion.com/v1/blocks/f612825f-64bf-4a46-97c8-48010c2da73f/children")
+        .headers(headers).send()
         .await?
-        .json::<HashMap<String, String>>()
+        .json()
         .await?;
-    println!("{:#?}", resp);
+
+        let mut todos: Vec<String> = Vec::new();
+
+        for i in 0..resp.results.len() {
+            let block = &resp.results[i];
+
+            if block.r#type == "to_do" && !block.to_do.as_ref().unwrap().checked {
+                todos.push(block.to_do.as_ref().unwrap().rich_text[0].plain_text.clone());
+            }
+        }
+
+            println!("{:?}", env::var("ZTEST"));
+        
+
+    println!("{:#?}", todos);
 
     Ok(CustomOutput {
         message: format!("Hello, {}!", first_name),
