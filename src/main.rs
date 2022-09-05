@@ -57,8 +57,7 @@ async fn main() -> Result<(), Error> {
 }
 
 async fn my_handler(event: LambdaEvent<Value>) -> Result<CustomOutput, Error> {
-    let (event, _context) = event.into_parts();
-    let first_name = event["firstName"].as_str().unwrap_or("world");
+    let _context = event.into_parts();
 
     let client = reqwest::Client::new();
 
@@ -72,8 +71,7 @@ async fn my_handler(event: LambdaEvent<Value>) -> Result<CustomOutput, Error> {
     headers.insert("Notion-Version", "2022-02-22".parse().unwrap());
     headers.insert("Authorization", new_owned_string.parse().unwrap());
 
-
-    let mut resp: PageBlocks = client.get("https://api.notion.com/v1/blocks/f612825f-64bf-4a46-97c8-48010c2da73f/children")
+    let resp: PageBlocks = client.get("https://api.notion.com/v1/blocks/f612825f-64bf-4a46-97c8-48010c2da73f/children")
         .headers(headers).send()
         .await?
         .json()
@@ -89,12 +87,7 @@ async fn my_handler(event: LambdaEvent<Value>) -> Result<CustomOutput, Error> {
             }
         }
 
-            println!("{:?}", env::var("ZTEST"));
-        
-
-    println!("{:#?}", todos);
-
     Ok(CustomOutput {
-        message: format!("Hello, {}!", first_name),
+        message: format!("{:#?}", todos),
     })
 }
