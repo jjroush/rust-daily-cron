@@ -4,7 +4,7 @@ extern crate log;
 extern crate simple_logger;
 
 use lambda_runtime::{service_fn, LambdaEvent, Error};
-
+use aws_sdk_sns::{Client};
 use serde_json::{Value};
 
 use std::env;
@@ -86,6 +86,9 @@ async fn my_handler(event: LambdaEvent<Value>) -> Result<CustomOutput, Error> {
                 todos.push(block.to_do.as_ref().unwrap().rich_text[0].plain_text.clone());
             }
         }
+
+    let aws_config = aws_config::from_env().load().await;
+    let aws_client = Client::new(&aws_config);
 
     Ok(CustomOutput {
         message: format!("{:#?}", todos),

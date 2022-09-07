@@ -14,6 +14,8 @@ log = "^0.4"
 simple_logger = "^2"
 reqwest = { version = "0.11", default_features = false, features = ["json", "rustls-tls"] }
 tokio = { version = "1", features = ["full"] }
+aws-config = "0.48.0"
+aws-sdk-sns = "0.18.0"
 
 [[bin]]
 name = "bootstrap"
