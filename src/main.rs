@@ -8,6 +8,7 @@ use aws_sdk_sns::{Client};
 use serde_json::{Value};
 
 use std::env;
+use aws_sdk_sns::model::Topic;
 
 
 #[derive(Deserialize, Clone)]
@@ -87,8 +88,15 @@ async fn my_handler(event: LambdaEvent<Value>) -> Result<CustomOutput, Error> {
             }
         }
 
-    let aws_config = aws_config::from_env().load().await;
+    let aws_config = aws_config::from_env().region("us-east-1").load().await;
     let aws_client = Client::new(&aws_config);
+
+    let rsp = aws_client
+        .publish()
+        .topic_arn("arn:aws:sns:us-east-1:573834862121:Reminders")
+        .message("hello sns!")
+        .send()
+        .await?;
 
     Ok(CustomOutput {
         message: format!("{:#?}", todos),
