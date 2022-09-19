@@ -91,10 +91,13 @@ async fn my_handler(event: LambdaEvent<Value>) -> Result<CustomOutput, Error> {
     let aws_config = aws_config::from_env().region("us-east-1").load().await;
     let aws_client = Client::new(&aws_config);
 
+
+    let todo_string = todos.join(", ");
+
     let rsp = aws_client
         .publish()
         .topic_arn("arn:aws:sns:us-east-1:573834862121:Reminders")
-        .message("hello sns!")
+        .message(todo_string)
         .send()
         .await?;
 
