@@ -92,7 +92,7 @@ async fn my_handler(event: LambdaEvent<Value>) -> Result<CustomOutput, Error> {
     let aws_client = Client::new(&aws_config);
 
 
-    let todo_string = todos.join(", ");
+    let todo_string = todos.join("<br />");
 
     let rsp = aws_client
         .publish()

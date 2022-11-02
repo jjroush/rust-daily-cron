@@ -2,7 +2,7 @@ compile:
 	cargo build --release --target x86_64-unknown-linux-musl
 
 zip:
-    zip -r9 -j bootstrap.zip ./target/x86_64-unknown-linux-musl/release/bootstrap
+	zip -r9 -j bootstrap.zip ./target/x86_64-unknown-linux-musl/release/bootstrap
 
 run:
 	cd ./target/x86_64-unknown-linux-musl/release && \
